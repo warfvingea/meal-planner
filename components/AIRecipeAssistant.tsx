@@ -23,21 +23,21 @@ const recipeOptions: RecipeOption[] = [
     id: 'swedish',
     name: 'Svensk Gourmet',
     description: 'Förfinad svensk husmanskost',
-    icon: '🇸🇪',
+    icon: '👨‍🍳',
     type: 'gourmet'
   },
   {
     id: 'italian',
     name: 'Italiensk Gourmet',
     description: 'Elegant italiensk matlagning',
-    icon: '🇮🇹',
+    icon: '🍝',
     type: 'gourmet'
   },
   {
     id: 'french',
     name: 'Fransk Gourmet',
     description: 'Klassisk fransk fine dining',
-    icon: '🇫🇷',
+    icon: '🥖',
     type: 'gourmet'
   },
   {
@@ -132,8 +132,8 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-      <h2 className="text-xl font-bold mb-4">AI Receptassistent</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+      <h2 className="text-xl font-bold mb-4 dark:text-white">AI Receptassistent</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         {recipeOptions.map((option) => (
@@ -144,69 +144,70 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
             className={`
               p-4 rounded-lg border transition-all
               ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-500 hover:shadow-md'}
-              ${selectedOption === option.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}
-              ${option.type === 'hidden_veggies' ? 'md:col-span-3 lg:col-span-5 bg-green-50' : ''}
+              ${selectedOption === option.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900' : 'border-gray-200 dark:border-gray-600'}
+              ${option.type === 'hidden_veggies' ? 'md:col-span-3 lg:col-span-5 bg-green-50 dark:bg-green-900' : ''}
+              dark:text-white dark:hover:border-blue-400
             `}
           >
             <div className="text-2xl mb-2">{option.icon}</div>
             <div className="font-semibold">{option.name}</div>
-            <div className="text-sm text-gray-600">{option.description}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">{option.description}</div>
           </button>
         ))}
       </div>
-
+  
       {loading && (
         <div className="text-center py-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-2">Genererar recept...</p>
+          <p className="mt-2 dark:text-white">Genererar recept...</p>
         </div>
       )}
-
+  
       {suggestion && (
-        <div className="mt-4 p-4 border rounded">
+        <div className="mt-4 p-4 border rounded dark:border-gray-600">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="font-bold text-xl mb-2">{suggestion.name}</h3>
-              <p className="text-gray-600">{suggestion.description}</p>
+              <h3 className="font-bold text-xl mb-2 dark:text-white">{suggestion.name}</h3>
+              <p className="text-gray-600 dark:text-gray-300">{suggestion.description}</p>
             </div>
-            <div className="text-right text-sm text-gray-600">
+            <div className="text-right text-sm text-gray-600 dark:text-gray-300">
               <div>Portioner: {suggestion.servings}</div>
               <div>Tillagningstid: {suggestion.prepTime}</div>
             </div>
           </div>
           
           {suggestion.type === 'hidden_veggies' && suggestion.hiddenVeggies && (
-            <div className="mb-4 bg-green-50 p-3 rounded">
-              <h4 className="font-semibold">Gömda Grönsaker:</h4>
-              <ul className="list-disc ml-6">
+            <div className="mb-4 bg-green-50 dark:bg-green-900 p-3 rounded">
+              <h4 className="font-semibold dark:text-white">Gömda Grönsaker:</h4>
+              <ul className="list-disc ml-6 dark:text-gray-300">
                 {suggestion.hiddenVeggies.map((veg, i) => (
                   <li key={i}>{veg}</li>
                 ))}
               </ul>
             </div>
           )}
-
+  
           <div className="mb-4">
-            <h4 className="font-semibold">Ingredienser:</h4>
-            <ul className="list-disc ml-6">
+            <h4 className="font-semibold dark:text-white">Ingredienser:</h4>
+            <ul className="list-disc ml-6 dark:text-gray-300">
               {suggestion.ingredients.map((ing, i) => (
                 <li key={i}>{ing}</li>
               ))}
             </ul>
           </div>
-
+  
           <div className="mb-4">
-            <h4 className="font-semibold">Instruktioner:</h4>
-            <ol className="list-decimal ml-6">
+            <h4 className="font-semibold dark:text-white">Instruktioner:</h4>
+            <ol className="list-decimal ml-6 dark:text-gray-300">
               {suggestion.instructions.map((step, i) => (
                 <li key={i} className="mb-2">{step}</li>
               ))}
             </ol>
           </div>
-
+  
           <button
             onClick={() => onAddRecipe(suggestion)}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
           >
             Lägg till i Måltidsplanen
           </button>
