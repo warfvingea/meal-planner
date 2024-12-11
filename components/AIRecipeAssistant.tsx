@@ -60,6 +60,7 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
   const [loading, setLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<Recipe | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [familySize, setFamilySize] = useState<number>(4);
 
   const getRecipeSuggestion = async (option: RecipeOption) => {
     if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
@@ -77,7 +78,7 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
       if (option.type === 'hidden_veggies') {
         prompt = `Du är en kreativ kock som skriver på svenska. 
         Skapa ett recept där grönsaker är smart dolda i en barnfavorit. 
-        Receptet ska vara för en familj på 4 personer.
+        Receptet ska vara för en familj på ${familySize} personer.
         VIKTIGT: Skriv alla ingredienser, instruktioner och beskrivningar på svenska.
         Returnera endast ett JSON-objekt i detta format:
         {
@@ -85,7 +86,7 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
           "description": "Kort beskrivning på svenska",
           "ingredients": ["ingrediens 1 med mängd", "ingrediens 2 med mängd"],
           "instructions": ["steg 1", "steg 2"],
-          "servings": 4,
+          "servings": ${familySize},
           "prepTime": "30 minuter",
           "cuisine": "Barnvänligt",
           "type": "hidden_veggies",
@@ -93,7 +94,7 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
         }`;
       } else {
         prompt = `Du är en mästerkock specialiserad på ${option.name} som skriver på svenska. 
-        Skapa ett sofistikerat men genomförbart recept för en familj på 4 personer.
+        Skapa ett sofistikerat men genomförbart recept för en familj på ${familySize} personer.
         Receptet ska vara elegant men inte för komplicerat.
         VIKTIGT: Skriv ALLA ingredienser, instruktioner och beskrivningar på svenska.
         Enheter ska anges i dl, msk, tsk, gram eller styck.
@@ -103,7 +104,7 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
           "description": "Kort beskrivning på svenska",
           "ingredients": ["ingrediens 1 med mängd", "ingrediens 2 med mängd"],
           "instructions": ["steg 1", "steg 2"],
-          "servings": 4,
+          "servings": ${familySize},
           "prepTime": "45 minuter",
           "cuisine": "${option.id}",
           "type": "gourmet"
@@ -135,6 +136,17 @@ const AIRecipeAssistant = ({ onAddRecipe }: { onAddRecipe: (recipe: Recipe) => v
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
       <h2 className="text-xl font-bold mb-4 dark:text-white">AI Receptassistent</h2>
       
+      <div className="mb-4">
+        <label className="block mb-2 dark:text-white">Antal personer:</label>
+        <input
+          type="number"
+          value={familySize}
+          onChange={(e) => setFamilySize(Number(e.target.value))}
+          min="1"
+          className="border rounded p-2 w-24 text-black"
+        />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
         {recipeOptions.map((option) => (
           <button
