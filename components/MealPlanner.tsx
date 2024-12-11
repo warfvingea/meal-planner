@@ -1,5 +1,4 @@
 'use client';
-import type { FC } from 'react';
 import React, { useState, useEffect } from 'react';
 import { Trash2 } from 'lucide-react';
 import AIRecipeAssistant from './AIRecipeAssistant';
