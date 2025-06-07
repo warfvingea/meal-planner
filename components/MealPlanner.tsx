@@ -1,13 +1,17 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trash2 } from 'lucide-react';
 import AIRecipeAssistant from './AIRecipeAssistant';
 import { Recipe, Meal } from '@/types';
+import Button from './ui/Button';
+import Input from './ui/Input';
+import Card from './ui/Card';
+import { validateMealName, validateIngredient, sanitizeInput } from '@/lib/validation';
 
 const MealPlanner: React.FC = () => {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [newMeal, setNewMeal] = useState('');
-  const [shoppingList, setShoppingList] = useState<string[]>([]);
+  const [newMealError, setNewMealError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -24,76 +28,120 @@ const MealPlanner: React.FC = () => {
     }
   }, [meals, isLoaded]);
 
-  const addMeal = () => {
-    if (newMeal.trim()) {
-      setMeals([...meals, { 
-        name: newMeal, 
-        ingredients: [],
-        type: 'gourmet' // default type för manuellt tillagda måltider
-      }]);
-      setNewMeal('');
+  const addMeal = useCallback(() => {
+    const sanitized = sanitizeInput(newMeal);
+    const error = validateMealName(sanitized);
+    
+    if (error) {
+      setNewMealError(error);
+      return;
     }
-  };
+    
+    setMeals(prevMeals => [...prevMeals, { 
+      name: sanitized.trim(), 
+      ingredients: [],
+      type: 'gourmet'
+    }]);
+    setNewMeal('');
+    setNewMealError(null);
+  }, [newMeal]);
 
-  const deleteMeal = (mealIndex: number) => {
-    setMeals(meals.filter((_, index) => index !== mealIndex));
-  };
+  const deleteMeal = useCallback((mealIndex: number) => {
+    setMeals(prevMeals => prevMeals.filter((_, index) => index !== mealIndex));
+  }, []);
 
-  const addIngredient = (mealIndex: number, ingredient: string) => {
-    const updatedMeals = [...meals];
-    updatedMeals[mealIndex].ingredients.push(ingredient);
-    setMeals(updatedMeals);
-  };
+  const addIngredient = useCallback((mealIndex: number, ingredient: string) => {
+    const sanitized = sanitizeInput(ingredient);
+    const error = validateIngredient(sanitized);
+    
+    if (error) return false;
+    
+    setMeals(prevMeals => {
+      const updatedMeals = [...prevMeals];
+      updatedMeals[mealIndex] = {
+        ...updatedMeals[mealIndex],
+        ingredients: [...updatedMeals[mealIndex].ingredients, sanitized.trim()]
+      };
+      return updatedMeals;
+    });
+    return true;
+  }, []);
 
-  const deleteIngredient = (mealIndex: number, ingredientIndex: number) => {
-    const updatedMeals = [...meals];
-    updatedMeals[mealIndex].ingredients = updatedMeals[mealIndex].ingredients.filter((_, index) => index !== ingredientIndex);
-    setMeals(updatedMeals);
-  };
+  const deleteIngredient = useCallback((mealIndex: number, ingredientIndex: number) => {
+    setMeals(prevMeals => {
+      const updatedMeals = [...prevMeals];
+      updatedMeals[mealIndex] = {
+        ...updatedMeals[mealIndex],
+        ingredients: updatedMeals[mealIndex].ingredients.filter((_, index) => index !== ingredientIndex)
+      };
+      return updatedMeals;
+    });
+  }, []);
 
-  const generateShoppingList = () => {
-    const allIngredients = meals.flatMap(meal => meal.ingredients);
-    setShoppingList(allIngredients);
-  };
+  const shoppingList = useMemo(() => {
+    return meals.flatMap(meal => meal.ingredients);
+  }, [meals]);
 
-  const addRecipeAsMeal = (recipe: Recipe) => {
-    setMeals([...meals, {
+  const addRecipeAsMeal = useCallback((recipe: Recipe) => {
+    setMeals(prevMeals => [...prevMeals, {
       name: recipe.name,
       ingredients: recipe.ingredients,
       recipe: recipe,
-      type: recipe.type // Använder receptets typ (hidden_veggies eller gourmet)
+      type: recipe.type
     }]);
-  };
+  }, []);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      addMeal();
+    }
+  }, [addMeal]);
+
+  const handleIngredientKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>, mealIndex: number) => {
+    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+      const success = addIngredient(mealIndex, e.currentTarget.value.trim());
+      if (success) {
+        e.currentTarget.value = '';
+      }
+    }
+  }, [addIngredient]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <main className="max-w-4xl mx-auto p-4">
+      <h1 className="sr-only">Måltidsplanerare - Planera dina veckomåltider</h1>
       <AIRecipeAssistant onAddRecipe={addRecipeAsMeal} />
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-4 dark:text-white">Måltidsplanerare</h1>
+      <Card className="mb-6">
+        <h2 className="text-2xl font-bold mb-4 dark:text-white">Måltidsplanerare</h2>
         
         <div className="flex gap-2 mb-6">
-          <input
-            type="text"
+          <Input
+            label="Lägg till ny måltid"
             value={newMeal}
-            onChange={(e) => setNewMeal(e.target.value)}
+            onChange={(e) => {
+              setNewMeal(e.target.value);
+              if (newMealError) setNewMealError(null);
+            }}
+            onKeyPress={handleKeyPress}
             placeholder="Ange måltidsnamn..."
-            className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+            error={newMealError || undefined}
+            className="flex-1"
+            required
           />
-          <button
+          <Button
             onClick={addMeal}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+            disabled={!newMeal.trim()}
+            className="mt-6"
           >
             Lägg till måltid
-          </button>
+          </Button>
         </div>
   
-        <div className="space-y-4">
+        <section className="space-y-4" aria-label="Måltidslista">
           {meals.map((meal, mealIndex) => (
-            <div 
+            <Card 
               key={mealIndex} 
-              className={`border rounded p-4 dark:border-gray-600 ${
-                meal.type === 'hidden_veggies' ? 'bg-green-50 dark:bg-green-900' : 'dark:bg-gray-700'
-              }`}
+              variant={meal.type === 'hidden_veggies' ? 'green' : 'default'}
+              className="border dark:border-gray-600"
             >
               <div className="flex justify-between items-center mb-2">
                 <div>
@@ -106,59 +154,53 @@ const MealPlanner: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => deleteMeal(mealIndex)}
-                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                  className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+                  aria-label={`Ta bort måltid ${meal.name}`}
                 >
                   <Trash2 size={20} />
                 </button>
               </div>
   
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
+              <div className="mb-2">
+                <Input
                   placeholder="Lägg till ingrediens..."
-                  className="flex-1 p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                      addIngredient(mealIndex, e.currentTarget.value.trim());
-                      e.currentTarget.value = '';
-                    }
-                  }}
+                  onKeyPress={(e) => handleIngredientKeyPress(e, mealIndex)}
+                  aria-label={`Lägg till ingrediens för ${meal.name}`}
                 />
               </div>
   
-              <ul className="list-disc ml-6">
+              <ul className="list-disc ml-6" role="list">
                 {meal.ingredients.map((ingredient, i) => (
-                  <li key={i} className="group flex items-center justify-between dark:text-gray-300">
+                  <li key={i} className="group flex items-center justify-between dark:text-gray-300" role="listitem">
                     <span>{ingredient}</span>
                     <button 
                       onClick={() => deleteIngredient(mealIndex, i)}
-                      className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity dark:text-red-400 dark:hover:text-red-300"
+                      className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity dark:text-red-400 dark:hover:text-red-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500 focus:opacity-100"
+                      aria-label={`Ta bort ingrediens ${ingredient}`}
                     >
                       <Trash2 size={16} />
                     </button>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           ))}
-        </div>
-      </div>
+        </section>
+      </Card>
   
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <Card>
         <h2 className="text-xl font-bold mb-4 dark:text-white">Inköpslista</h2>
-        <button
-          onClick={generateShoppingList}
-          className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 mb-4 dark:bg-green-600 dark:hover:bg-green-700"
-        >
-          Generera Inköpslista
-        </button>
-        <ul className="list-disc ml-6 dark:text-gray-300">
-          {shoppingList.map((item, index) => (
-            <li key={index}>{item}</li>
-          ))}
-        </ul>
-      </div>
-    </div>
+        {shoppingList.length > 0 ? (
+          <ul className="list-disc ml-6 dark:text-gray-300" role="list">
+            {shoppingList.map((item, index) => (
+              <li key={index} role="listitem">{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 dark:text-gray-400">Inga ingredienser att visa. Lägg till måltider för att generera en inköpslista.</p>
+        )}
+      </Card>
+    </main>
   );
 };
 

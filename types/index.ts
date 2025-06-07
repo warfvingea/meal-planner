@@ -18,3 +18,21 @@ export interface Meal {
   recipe?: Recipe;
   type: RecipeType;
 }
+
+export interface ApiError {
+  error: string;
+  details?: string;
+}
+
+export interface RecipeApiRequest {
+  option: {
+    id: string;
+    name: string;
+    type: RecipeType;
+  };
+  familySize: number;
+}
+
+export interface RecipeApiResponse {
+  recipe: Recipe;
+}
